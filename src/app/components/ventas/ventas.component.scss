@@ -1,0 +1,12 @@
+.accordion-button:not(.collapsed) {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.producto-card {
+  border: 1px solid var(--bs-border-color);
+
+  &.agotado {
+    opacity: 0.5;
+  }
+}

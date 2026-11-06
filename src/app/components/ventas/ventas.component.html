@@ -1,0 +1,195 @@
+<div class="row g-4">
+
+  <!-- Nueva venta -->
+  <div class="col-12 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Nueva venta</h5>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalProductos">
+          <i class="ri-add-line"></i> Agregar producto
+        </button>
+      </div>
+      <div class="card-body">
+
+        <!-- Resumen carrito -->
+        <div class="table-responsive mb-3" *ngIf="carrito.length > 0">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Costo Unidad</th>
+                <th>Subtotal</th>
+                <th class="table-head-action"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of carrito">
+                <td>{{ item.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td> {{ item.price }} </td>
+                <td>Bs {{ (item.price * item.quantity).toFixed(2) }}</td>
+                <td class="table-data-action">
+                  <div>
+                    <button
+                      type="button"
+                      class="btn btn-link p-0 text-danger"
+                      (click)="quitarDelCarrito(item.product_id)">
+                      <i class="ri-delete-bin-line"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="text-muted text-center mb-3" *ngIf="carrito.length === 0">
+          Aún no has agregado productos a la venta.
+        </p>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0">Total: Bs {{ total.toFixed(2) }}</h6>
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="guardandoVenta || carrito.length === 0"
+            (click)="registrarVenta()">
+            Registrar venta
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial de ventas -->
+  <div class="col-12 col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Ventas registradas</h5>
+        <button
+          type="button"
+          class="btn btn-link p-0"
+          (click)="cargarVentas()"
+          title="Refrescar">
+          <i class="ri-refresh-line"></i>
+        </button>
+      </div>
+      <div class="card-body p-0">
+
+        <div class="accordion accordion-flush" id="acordeonVentas" *ngIf="ventas.length > 0">
+          <div class="accordion-item" *ngFor="let venta of ventas">
+            <h2 class="accordion-header">
+              <button
+                class="accordion-button collapsed"
+                type="button"
+                data-bs-toggle="collapse"
+                [attr.data-bs-target]="'#venta-' + venta.id">
+                <span class="d-flex justify-content-between w-100 me-3">
+                  <span>Venta N{{ venta.id }} : {{ venta.created_at }}</span>
+                  <strong>Bs {{ venta.total }}</strong>
+                </span>
+              </button>
+            </h2>
+            <div [id]="'venta-' + venta.id" class="accordion-collapse collapse" data-bs-parent="#acordeonVentas">
+              <div class="accordion-body">
+                <table class="table table-sm mb-3">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th>Cantidad</th>
+                      <th>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let detalle of venta.details">
+                      <td>{{ detalle.product }}</td>
+                      <td>{{ detalle.quantity }}</td>
+                      <td>Bs {{ detalle.subtotal }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <button
+                  type="button"
+                  class="btn btn-outline-danger btn-sm"
+                  (click)="eliminarVenta(venta)">
+                  <i class="ri-delete-bin-line"></i>
+                  Eliminar venta
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-muted text-center py-4 mb-0" *ngIf="ventas.length === 0 && !cargandoVentas">
+          Todavía no hay ventas registradas.
+        </p>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal: seleccion de productos -->
+<div class="modal fade" id="modalProductos" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Selecciona productos</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-2">
+          <div class="col-6 col-md-4" *ngFor="let p of productos">
+            <div class="card producto-card h-100" [class.agotado]="p.stock <= 0">
+              <div class="card-body text-center p-2">
+                <i class="ri-box-3-line fs-3 d-block mb-1"></i>
+                <p class="fw-semibold small mb-1">{{ p.name }}</p>
+                <p class="small text-muted mb-1">Bs {{ p.price }}</p>
+                <span class="badge d-block mb-2" [class.bg-success-subtle]="stockDisponible(p) > 0" [class.bg-secondary-subtle]="stockDisponible(p) <= 0"
+                      [class.text-success]="stockDisponible(p) > 0" [class.text-secondary]="stockDisponible(p) <= 0">
+                  {{ stockDisponible(p) > 0 ? 'Stock: ' + stockDisponible(p) : (p.stock > 0 ? 'Todo en el carrito' : 'Sin stock') }}
+                </span>
+
+                <div class="d-flex align-items-center justify-content-center gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    [disabled]="cantidadEnCarrito(p.id) === 0"
+                    (click)="decrementar(p)">
+                    <i class="ri-subtract-line"></i>
+                  </button>
+                  <input
+                    type="number"
+                    min="0"
+                    [max]="p.stock"
+                    class="form-control form-control-sm text-center p-1"
+                    style="width: 3.5rem;"
+                    [disabled]="p.stock <= 0"
+                    [value]="cantidadEnCarrito(p.id)"
+                    (change)="actualizarCantidad(p, $any($event.target).value)">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    [disabled]="p.stock <= 0"
+                    (click)="incrementar(p)">
+                    <i class="ri-add-line"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="text-muted text-center py-3 mb-0" *ngIf="productos.length === 0 && !cargandoProductos">
+          No hay productos disponibles.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <span class="me-auto fw-semibold">Total: Bs {{ total.toFixed(2) }}</span>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Listo</button>
+      </div>
+    </div>
+  </div>
+</div>
